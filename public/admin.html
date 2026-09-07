@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration - Cedelia Tools Portal</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div class="login-overlay" id="login-screen">
+    <div class="login-card">
+      <h2>Administration</h2>
+      <p class="login-subtitle">Cedelia Informatique</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="username">Identifiant</label>
+          <input type="text" id="username" name="username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="password">Mot de passe</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-primary">Se connecter</button>
+        <p class="error-msg" id="login-error" hidden></p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN -->
+  <div id="admin-app" hidden>
+    <header class="header">
+      <a href="/" class="header-brand">
+        <img src="/img/logo-header.svg" alt="Cedelia">
+      </a>
+      <nav class="header-nav">
+        <a href="/">Voir le portail</a>
+        <button onclick="logout()">Déconnexion</button>
+      </nav>
+    </header>
+
+    <div class="admin-layout">
+      <nav class="admin-sidebar">
+        <a href="#" class="active" onclick="showSection('tools', this)" id="nav-tools">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Outils
+        </a>
+        <a href="#" onclick="showSection('add', this)" id="nav-add">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          Ajouter
+        </a>
+        <a href="#" onclick="showSection('logs', this)" id="nav-logs">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Journaux
+        </a>
+      </nav>
+
+      <div class="admin-content">
+        <!-- TOOLS SECTION -->
+        <section id="section-tools">
+          <h2>Outils disponibles</h2>
+          <div id="tools-table-wrapper"></div>
+        </section>
+
+        <!-- ADD SECTION -->
+        <section id="section-add" hidden>
+          <h2>Ajouter un outil</h2>
+          <form id="add-form">
+            <div class="upload-zone" id="upload-zone">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <p>Glissez un fichier ici ou cliquez pour sélectionner</p>
+              <p class="file-name" id="file-name"></p>
+              <input type="file" id="file-input" hidden>
+            </div>
+            <div class="form-group">
+              <label for="tool-name">Nom de l'outil</label>
+              <input type="text" id="tool-name" placeholder="Ex: TeamViewer" required>
+            </div>
+            <div class="form-group">
+              <label for="tool-desc">Description</label>
+              <textarea id="tool-desc" placeholder="Brève description de l'outil..."></textarea>
+            </div>
+            <div class="form-group">
+              <label for="tool-cat">Catégorie</label>
+              <select id="tool-cat">
+                <option>Support à distance</option>
+                <option>Sécurité</option>
+                <option>Utilitaires</option>
+                <option>Réseau</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="tool-version">Version</label>
+              <input type="text" id="tool-version" placeholder="1.0" value="1.0">
+            </div>
+            <div class="form-group">
+              <label>Couleur du bouton Télécharger (optionnel)</label>
+              <div class="color-row">
+                <input type="color" id="tool-color" value="#1038e0">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="checkbox" id="tool-color-enabled"> Personnaliser la couleur
+                </label>
+              </div>
+            </div>
+            <button type="submit" class="btn-primary">Ajouter l'outil</button>
+          </form>
+        </section>
+
+        <!-- LOGS SECTION -->
+        <section id="section-logs" hidden>
+          <h2>Journaux d'activité</h2>
+          <div class="log-filters">
+            <div class="search-box" style="flex:1;min-width:200px">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Filtrer les journaux..." id="log-filter" oninput="loadLogs()">
+            </div>
+          </div>
+          <div id="logs-table-wrapper"></div>
+          <div class="pagination" id="logs-pagination"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MODAL -->
+  <div class="modal-overlay" id="edit-modal" hidden>
+    <div class="modal">
+      <h3>Modifier l'outil</h3>
+      <form id="edit-form">
+        <input type="hidden" id="edit-id">
+        <div class="form-group">
+          <label>Nom</label>
+          <input type="text" id="edit-name" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="edit-desc"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Catégorie</label>
+          <select id="edit-cat">
+            <option>Support à distance</option>
+            <option>Sécurité</option>
+            <option>Utilitaires</option>
+            <option>Réseau</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Version</label>
+          <input type="text" id="edit-version">
+        </div>
+        <div class="form-group">
+          <label>Couleur du bouton</label>
+          <div class="color-row">
+            <input type="color" id="edit-color" value="#1038e0">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" id="edit-color-enabled"> Personnaliser
+            </label>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-secondary" onclick="closeEditModal()">Annuler</button>
+          <button type="submit" class="btn-primary" style="width:auto;padding:10px 24px">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+const LABELS = {
+  download: 'Téléchargement',
+  login: 'Connexion',
+  login_failed: 'Échec connexion',
+  logout: 'Déconnexion',
+  tool_add: 'Ajout outil',
+  tool_edit: 'Modification',
+  tool_delete: 'Suppression'
+};
+
+// --- Auth ---
+async function checkAuth() {
+  const res = await fetch('/api/auth/check');
+  const data = await res.json();
+  if (data.authenticated) {
+    document.getElementById('login-screen').hidden = true;
+    document.getElementById('admin-app').hidden = false;
+    loadAdminTools();
+  }
+}
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById('login-error');
+  errEl.hidden = true;
+
+  const res = await fetch('/api/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: document.getElementById('username').value,
+      password: document.getElementById('password').value
+    })
+  });
+
+  if (res.ok) {
+    document.getElementById('login-screen').hidden = true;
+    document.getElementById('admin-app').hidden = false;
+    loadAdminTools();
+  } else {
+    errEl.textContent = 'Identifiants incorrects';
+    errEl.hidden = false;
+  }
+});
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  location.reload();
+}
+
+// --- Sections ---
+function showSection(name, link) {
+  document.querySelectorAll('.admin-content > section').forEach(s => s.hidden = true);
+  document.getElementById('section-' + name).hidden = false;
+  document.querySelectorAll('.admin-sidebar a').forEach(a => a.classList.remove('active'));
+  if (link) link.classList.add('active');
+
+  if (name === 'tools') loadAdminTools();
+  if (name === 'logs') loadLogs();
+}
+
+// --- Tools management ---
+async function loadAdminTools() {
+  const res = await fetch('/api/tools');
+  const tools = await res.json();
+  const wrapper = document.getElementById('tools-table-wrapper');
+
+  if (tools.length === 0) {
+    wrapper.innerHTML = '<div class="empty-state"><h3>Aucun outil</h3><p>Ajoutez votre premier outil via l\'onglet "Ajouter".</p></div>';
+    return;
+  }
+
+  wrapper.innerHTML = `
+    <table class="data-table">
+      <thead><tr>
+        <th>Nom</th><th>Catégorie</th><th>Version</th><th>Taille</th><th>Couleur</th><th>Actions</th>
+      </tr></thead>
+      <tbody>${tools.map(t => `
+        <tr>
+          <td><strong>${esc(t.name)}</strong><br><small style="color:var(--text-secondary)">${esc(t.description).substring(0, 60)}</small></td>
+          <td><span class="tool-badge">${esc(t.category)}</span></td>
+          <td>${esc(t.version)}</td>
+          <td>${formatSize(t.size)}</td>
+          <td>${t.buttonColor ? `<span class="color-preview" style="background:${t.buttonColor}"></span> ${t.buttonColor}` : '<span style="color:var(--text-secondary)">Défaut</span>'}</td>
+          <td><div class="action-btns">
+            <button class="action-btn" onclick='openEditModal(${JSON.stringify(t)})' title="Modifier">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="action-btn delete" onclick="deleteTool('${t.id}', '${esc(t.name)}')" title="Supprimer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+            </button>
+          </div></td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+}
+
+async function deleteTool(id, name) {
+  if (!confirm(`Supprimer l'outil "${name}" ? Cette action est irréversible.`)) return;
+  const res = await fetch('/api/admin/tools/' + id, { method: 'DELETE' });
+  if (res.ok) {
+    toast('Outil supprimé', 'success');
+    loadAdminTools();
+  } else {
+    toast('Erreur lors de la suppression', 'error');
+  }
+}
+
+// --- Edit Modal ---
+function openEditModal(tool) {
+  document.getElementById('edit-id').value = tool.id;
+  document.getElementById('edit-name').value = tool.name;
+  document.getElementById('edit-desc').value = tool.description;
+  document.getElementById('edit-cat').value = tool.category;
+  document.getElementById('edit-version').value = tool.version;
+  document.getElementById('edit-color-enabled').checked = !!tool.buttonColor;
+  document.getElementById('edit-color').value = tool.buttonColor || '#1038e0';
+  document.getElementById('edit-modal').hidden = false;
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').hidden = true;
+}
+
+document.getElementById('edit-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = document.getElementById('edit-id').value;
+  const colorEnabled = document.getElementById('edit-color-enabled').checked;
+  const res = await fetch('/api/admin/tools/' + id, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: document.getElementById('edit-name').value,
+      description: document.getElementById('edit-desc').value,
+      category: document.getElementById('edit-cat').value,
+      version: document.getElementById('edit-version').value,
+      buttonColor: colorEnabled ? document.getElementById('edit-color').value : ''
+    })
+  });
+  if (res.ok) {
+    closeEditModal();
+    toast('Outil modifié', 'success');
+    loadAdminTools();
+  } else {
+    toast('Erreur lors de la modification', 'error');
+  }
+});
+
+// --- Upload ---
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files.length) {
+    fileInput.files = e.dataTransfer.files;
+    document.getElementById('file-name').textContent = e.dataTransfer.files[0].name;
+    if (!document.getElementById('tool-name').value) {
+      document.getElementById('tool-name').value = e.dataTransfer.files[0].name.replace(/\.[^/.]+$/, '');
+    }
+  }
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) {
+    document.getElementById('file-name').textContent = fileInput.files[0].name;
+    if (!document.getElementById('tool-name').value) {
+      document.getElementById('tool-name').value = fileInput.files[0].name.replace(/\.[^/.]+$/, '');
+    }
+  }
+});
+
+document.getElementById('add-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if (!fileInput.files.length) { toast('Sélectionnez un fichier', 'error'); return; }
+
+  const colorEnabled = document.getElementById('tool-color-enabled').checked;
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  fd.append('name', document.getElementById('tool-name').value);
+  fd.append('description', document.getElementById('tool-desc').value);
+  fd.append('category', document.getElementById('tool-cat').value);
+  fd.append('version', document.getElementById('tool-version').value);
+  fd.append('buttonColor', colorEnabled ? document.getElementById('tool-color').value : '');
+
+  const res = await fetch('/api/admin/tools', { method: 'POST', body: fd });
+  if (res.ok) {
+    toast('Outil ajouté avec succès', 'success');
+    document.getElementById('add-form').reset();
+    document.getElementById('file-name').textContent = '';
+    showSection('tools', document.getElementById('nav-tools'));
+  } else {
+    toast('Erreur lors de l\'ajout', 'error');
+  }
+});
+
+// --- Logs ---
+let logsPage = 1;
+
+async function loadLogs(page) {
+  if (page) logsPage = page;
+  const filter = document.getElementById('log-filter')?.value || '';
+  const res = await fetch(`/api/admin/logs?page=${logsPage}&limit=30&filter=${encodeURIComponent(filter)}`);
+  const data = await res.json();
+  const wrapper = document.getElementById('logs-table-wrapper');
+
+  if (data.logs.length === 0) {
+    wrapper.innerHTML = '<div class="empty-state"><h3>Aucun journal</h3><p>Les activités apparaîtront ici.</p></div>';
+    document.getElementById('logs-pagination').innerHTML = '';
+    return;
+  }
+
+  wrapper.innerHTML = `
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Action</th><th>Détails</th><th>IP</th></tr></thead>
+      <tbody>${data.logs.map(l => `
+        <tr>
+          <td style="white-space:nowrap">${new Date(l.timestamp).toLocaleString('fr-FR')}</td>
+          <td><span class="log-badge ${l.action}">${LABELS[l.action] || l.action}</span></td>
+          <td>${esc(l.details)}</td>
+          <td><code style="font-size:0.8rem">${esc(l.ip)}</code></td>
+        </tr>`).join('')}</tbody>
+    </table>`;
+
+  const pag = document.getElementById('logs-pagination');
+  pag.innerHTML = `
+    <button onclick="loadLogs(${logsPage - 1})" ${logsPage <= 1 ? 'disabled' : ''}>Précédent</button>
+    <span>Page ${data.page} / ${data.totalPages}</span>
+    <button onclick="loadLogs(${logsPage + 1})" ${logsPage >= data.totalPages ? 'disabled' : ''}>Suivant</button>`;
+}
+
+// --- Helpers ---
+function formatSize(bytes) {
+  if (!bytes) return '—';
+  if (bytes < 1024) return bytes + ' o';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Ko';
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' Mo';
+  return (bytes / 1073741824).toFixed(1) + ' Go';
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function toast(msg, type) {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+checkAuth();
+</script>
+</body>
+</html>

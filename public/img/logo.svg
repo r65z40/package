@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500" width="400" height="500">
+  <defs>
+    <style>
+      .logo-blue { fill: #1038e0; }
+    </style>
+  </defs>
+  <!-- Arcs forming the C shape -->
+  <g transform="translate(200, 180)">
+    <!-- Outer arc -->
+    <path class="logo-blue" d="M 80,-120 A 140,140 0 1,0 80,120" fill="none" stroke="#1038e0" stroke-width="24" stroke-linecap="round"/>
+    <!-- Middle arc -->
+    <path class="logo-blue" d="M 55,-85 A 100,100 0 1,0 55,85" fill="none" stroke="#1038e0" stroke-width="22" stroke-linecap="round"/>
+    <!-- Inner arc -->
+    <path class="logo-blue" d="M 35,-52 A 62,62 0 1,0 35,52" fill="none" stroke="#1038e0" stroke-width="20" stroke-linecap="round"/>
+  </g>
+  <!-- CEDELIA text -->
+  <text x="200" y="380" text-anchor="middle" font-family="'Segoe UI', system-ui, sans-serif" font-size="52" font-weight="700" letter-spacing="6" fill="#1038e0">CEDELIA</text>
+  <!-- INFORMATIQUE text -->
+  <text x="200" y="420" text-anchor="middle" font-family="'Segoe UI', system-ui, sans-serif" font-size="28" font-weight="400" letter-spacing="8" fill="#1038e0">INFORMATIQUE</text>
+</svg>
