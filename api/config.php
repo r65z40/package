@@ -23,14 +23,27 @@ define('TOKEN_LIFETIME', 3600);
 
 header('Content-Type: application/json; charset=utf-8');
 
+if (!is_dir(DATA_DIR)) {
+    @mkdir(DATA_DIR, 0755, true);
+}
+if (!is_dir(UPLOADS_DIR)) {
+    @mkdir(UPLOADS_DIR, 0755, true);
+}
+
 function read_json($file) {
     if (!file_exists($file)) return [];
     $content = file_get_contents($file);
+    if ($content === false) return [];
     return json_decode($content, true) ?: [];
 }
 
 function write_json($file, $data) {
-    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    $dir = dirname($file);
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    $result = @file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    if ($result === false) {
+        throw new \RuntimeException('Impossible d\'écrire dans ' . basename($file) . ' — vérifiez les permissions du dossier data/ (chmod 755 ou 777)');
+    }
 }
 
 function add_log($action, $details) {

@@ -3,4 +3,3 @@ uploads/*
 !uploads/.htaccess
 data/users.json
 data/logs.json
-data/sessions.json
