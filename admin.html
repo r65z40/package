@@ -209,11 +209,10 @@ function api(url, opts) {
   var o = Object.assign({ credentials: 'same-origin' }, opts || {});
   var token = localStorage.getItem('cedelia_token');
   if (token) {
-    if (!o.headers) o.headers = {};
-    if (o.headers instanceof Headers) {
-      o.headers.set('X-Auth-Token', token);
-    } else {
-      o.headers['X-Auth-Token'] = token;
+    var sep = url.indexOf('?') === -1 ? '?' : '&';
+    url = url + sep + 'token=' + encodeURIComponent(token);
+    if (o.body instanceof FormData) {
+      o.body.append('token', token);
     }
   }
   return fetch(url, o);

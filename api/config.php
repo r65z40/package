@@ -62,6 +62,8 @@ function create_auth_token($username) {
 }
 
 function get_auth_token() {
+    if (!empty($_GET['token'])) return $_GET['token'];
+    if (!empty($_POST['token'])) return $_POST['token'];
     if (!empty($_COOKIE['cedelia_token'])) return $_COOKIE['cedelia_token'];
     if (!empty($_SERVER['HTTP_X_AUTH_TOKEN'])) return $_SERVER['HTTP_X_AUTH_TOKEN'];
     return '';
