@@ -205,10 +205,17 @@ function toast(msg, type) {
 }
 
 // --- Auth ---
-var fetchOpts = { credentials: 'same-origin' };
-
 function api(url, opts) {
-  var o = Object.assign({}, fetchOpts, opts || {});
+  var o = Object.assign({ credentials: 'same-origin' }, opts || {});
+  var token = localStorage.getItem('cedelia_token');
+  if (token) {
+    if (!o.headers) o.headers = {};
+    if (o.headers instanceof Headers) {
+      o.headers.set('X-Auth-Token', token);
+    } else {
+      o.headers['X-Auth-Token'] = token;
+    }
+  }
   return fetch(url, o);
 }
 
@@ -238,12 +245,15 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
       password: document.getElementById('password').value
     })
   }).then(function(r) {
-    if (r.ok) {
+    return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+  }).then(function(result) {
+    if (result.ok && result.data.token) {
+      localStorage.setItem('cedelia_token', result.data.token);
       document.getElementById('login-screen').hidden = true;
       document.getElementById('admin-app').hidden = false;
       loadAdminTools();
     } else {
-      errEl.textContent = 'Identifiants incorrects';
+      errEl.textContent = result.data.error || 'Identifiants incorrects';
       errEl.hidden = false;
     }
   }).catch(function() {
@@ -253,7 +263,10 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
 });
 
 function logout() {
-  api('api/logout.php', { method: 'POST' }).then(function() { location.reload(); });
+  api('api/logout.php', { method: 'POST' }).then(function() {
+    localStorage.removeItem('cedelia_token');
+    location.reload();
+  });
 }
 
 // --- Sections ---

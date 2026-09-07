@@ -18,7 +18,6 @@ if (!$found || !password_verify($password, $found['password'])) {
     exit;
 }
 
-$_SESSION['authenticated'] = true;
-$_SESSION['username'] = $found['username'];
+$token = create_auth_token($found['username']);
 add_log('login', 'Connexion réussie de "' . $found['username'] . '"');
-echo json_encode(['success' => true]);
+echo json_encode(['success' => true, 'token' => $token]);

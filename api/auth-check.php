@@ -1,3 +1,3 @@
 <?php
 require_once __DIR__ . '/config.php';
-echo json_encode(['authenticated' => !empty($_SESSION['authenticated'])]);
+echo json_encode(['authenticated' => check_auth()]);

@@ -13,20 +13,13 @@ set_error_handler(function($severity, $message, $file, $line) {
     throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
-session_set_cookie_params([
-    'lifetime' => 3600,
-    'path' => '/',
-    'httponly' => true,
-    'samesite' => 'Lax'
-]);
-session_start();
-
 define('DATA_DIR', __DIR__ . '/../data');
 define('UPLOADS_DIR', __DIR__ . '/../uploads');
 define('TOOLS_FILE', DATA_DIR . '/tools.json');
 define('USERS_FILE', DATA_DIR . '/users.json');
 define('LOGS_FILE', DATA_DIR . '/logs.json');
-define('MAX_UPLOAD_SIZE', 500 * 1024 * 1024);
+define('SESSIONS_FILE', DATA_DIR . '/sessions.json');
+define('TOKEN_LIFETIME', 3600);
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -53,12 +46,56 @@ function add_log($action, $details) {
     write_json(LOGS_FILE, $logs);
 }
 
+function create_auth_token($username) {
+    $token = bin2hex(random_bytes(32));
+    $sessions = read_json(SESSIONS_FILE);
+    $sessions = array_filter($sessions, function($s) {
+        return $s['expires'] > time();
+    });
+    $sessions[$token] = [
+        'username' => $username,
+        'expires' => time() + TOKEN_LIFETIME
+    ];
+    write_json(SESSIONS_FILE, $sessions);
+    setcookie('cedelia_token', $token, time() + TOKEN_LIFETIME, '/', '', false, true);
+    return $token;
+}
+
+function get_auth_token() {
+    if (!empty($_COOKIE['cedelia_token'])) return $_COOKIE['cedelia_token'];
+    if (!empty($_SERVER['HTTP_X_AUTH_TOKEN'])) return $_SERVER['HTTP_X_AUTH_TOKEN'];
+    return '';
+}
+
+function check_auth() {
+    $token = get_auth_token();
+    if (!$token) return false;
+    $sessions = read_json(SESSIONS_FILE);
+    if (!isset($sessions[$token])) return false;
+    if ($sessions[$token]['expires'] < time()) {
+        unset($sessions[$token]);
+        write_json(SESSIONS_FILE, $sessions);
+        return false;
+    }
+    return true;
+}
+
 function require_auth() {
-    if (empty($_SESSION['authenticated'])) {
+    if (!check_auth()) {
         http_response_code(401);
         echo json_encode(['error' => 'Non autorisé']);
         exit;
     }
+}
+
+function destroy_auth_token() {
+    $token = get_auth_token();
+    if ($token) {
+        $sessions = read_json(SESSIONS_FILE);
+        unset($sessions[$token]);
+        write_json(SESSIONS_FILE, $sessions);
+    }
+    setcookie('cedelia_token', '', time() - 3600, '/', '', false, true);
 }
 
 function get_input() {
