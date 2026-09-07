@@ -84,8 +84,22 @@ function check_auth() {
 
 function require_auth() {
     if (!check_auth()) {
+        $token = get_auth_token();
+        $debug = 'token=' . ($token ? 'present(' . substr($token, 0, 8) . '...)' : 'absent');
+        $debug .= ', file=' . (file_exists(SESSIONS_FILE) ? 'exists' : 'missing');
+        if ($token && file_exists(SESSIONS_FILE)) {
+            $sessions = read_json(SESSIONS_FILE);
+            $debug .= ', keys=' . count($sessions);
+            $debug .= ', match=' . (isset($sessions[$token]) ? 'yes' : 'no');
+            if (isset($sessions[$token])) {
+                $debug .= ', expires=' . $sessions[$token]['expires'] . ', now=' . time();
+            }
+        }
+        $debug .= ', GET=' . (!empty($_GET['token']) ? 'yes' : 'no');
+        $debug .= ', POST=' . (!empty($_POST['token']) ? 'yes' : 'no');
+        $debug .= ', COOKIE=' . (!empty($_COOKIE['cedelia_token']) ? 'yes' : 'no');
         http_response_code(401);
-        echo json_encode(['error' => 'Non autorisé']);
+        echo json_encode(['error' => 'Non autorisé', 'debug' => $debug]);
         exit;
     }
 }

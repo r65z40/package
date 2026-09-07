@@ -222,6 +222,7 @@ function checkAuth() {
   api('api/auth-check.php')
     .then(function(r) { return r.json(); })
     .then(function(data) {
+      console.log('auth-check response:', JSON.stringify(data));
       if (data.authenticated) {
         document.getElementById('login-screen').hidden = true;
         document.getElementById('admin-app').hidden = false;
@@ -346,7 +347,10 @@ function deleteTool(id, idx) {
     })
     .then(function(result) {
       if (result.ok) { toast('Outil supprimé', 'success'); loadAdminTools(); }
-      else toast(result.data.error || 'Erreur lors de la suppression', 'error');
+      else {
+        console.log('delete error:', JSON.stringify(result.data));
+        toast((result.data.error || 'Erreur') + (result.data.debug ? ' [' + result.data.debug + ']' : ''), 'error');
+      }
     })
     .catch(function(err) { toast('Erreur: ' + err.message, 'error'); });
 }
@@ -392,7 +396,8 @@ document.getElementById('edit-form').addEventListener('submit', function(e) {
         toast('Outil modifié', 'success');
         loadAdminTools();
       } else {
-        toast(result.data.error || 'Erreur lors de la modification', 'error');
+        console.log('edit error:', JSON.stringify(result.data));
+        toast((result.data.error || 'Erreur') + (result.data.debug ? ' [' + result.data.debug + ']' : ''), 'error');
       }
     })
     .catch(function(err) {
@@ -452,7 +457,8 @@ document.getElementById('add-form').addEventListener('submit', function(e) {
         document.getElementById('file-name').textContent = '';
         showSection('tools', document.getElementById('nav-tools'));
       } else {
-        toast(result.data.error || 'Erreur lors de l\'ajout', 'error');
+        console.log('add error:', JSON.stringify(result.data));
+        toast((result.data.error || 'Erreur') + (result.data.debug ? ' [' + result.data.debug + ']' : ''), 'error');
       }
     })
     .catch(function(err) {
