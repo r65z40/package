@@ -13,6 +13,12 @@ set_error_handler(function($severity, $message, $file, $line) {
     throw new ErrorException($message, 0, $severity, $file, $line);
 });
 
+session_set_cookie_params([
+    'lifetime' => 3600,
+    'path' => '/',
+    'httponly' => true,
+    'samesite' => 'Lax'
+]);
 session_start();
 
 define('DATA_DIR', __DIR__ . '/../data');

@@ -205,8 +205,15 @@ function toast(msg, type) {
 }
 
 // --- Auth ---
+var fetchOpts = { credentials: 'same-origin' };
+
+function api(url, opts) {
+  var o = Object.assign({}, fetchOpts, opts || {});
+  return fetch(url, o);
+}
+
 function checkAuth() {
-  fetch('api/auth-check.php')
+  api('api/auth-check.php')
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data.authenticated) {
@@ -223,7 +230,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
   var errEl = document.getElementById('login-error');
   errEl.hidden = true;
 
-  fetch('api/login.php', {
+  api('api/login.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -246,7 +253,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
 });
 
 function logout() {
-  fetch('api/logout.php', { method: 'POST' }).then(function() { location.reload(); });
+  api('api/logout.php', { method: 'POST' }).then(function() { location.reload(); });
 }
 
 // --- Sections ---
@@ -267,7 +274,7 @@ function showSection(name, link) {
 var cachedTools = [];
 
 function loadAdminTools() {
-  fetch('api/tools.php')
+  api('api/tools.php')
     .then(function(r) { return r.json(); })
     .then(function(tools) {
       cachedTools = tools;
@@ -321,7 +328,7 @@ function deleteTool(id, idx) {
   fd.append('action', 'delete');
   fd.append('id', id);
 
-  fetch('api/admin-tools.php', { method: 'POST', body: fd })
+  api('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
       return r.json().then(function(data) { return { ok: r.ok, data: data }; });
     })
@@ -363,7 +370,7 @@ document.getElementById('edit-form').addEventListener('submit', function(e) {
   fd.append('version', document.getElementById('edit-version').value);
   fd.append('buttonColor', colorEnabled ? document.getElementById('edit-color').value : '');
 
-  fetch('api/admin-tools.php', { method: 'POST', body: fd })
+  api('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
       return r.json().then(function(data) { return { ok: r.ok, data: data }; });
     })
@@ -422,7 +429,7 @@ document.getElementById('add-form').addEventListener('submit', function(e) {
   fd.append('version', document.getElementById('tool-version').value);
   fd.append('buttonColor', colorEnabled ? document.getElementById('tool-color').value : '');
 
-  fetch('api/admin-tools.php', { method: 'POST', body: fd })
+  api('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
       return r.json().then(function(data) { return { ok: r.ok, data: data }; });
     })
@@ -447,7 +454,7 @@ var logsPage = 1;
 function loadLogs(page) {
   if (page) logsPage = page;
   var filter = document.getElementById('log-filter') ? document.getElementById('log-filter').value : '';
-  fetch('api/admin-logs.php?page=' + logsPage + '&limit=30&filter=' + encodeURIComponent(filter))
+  api('api/admin-logs.php?page=' + logsPage + '&limit=30&filter=' + encodeURIComponent(filter))
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var wrapper = document.getElementById('logs-table-wrapper');
