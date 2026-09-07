@@ -2,9 +2,10 @@
 require_once __DIR__ . '/config.php';
 require_auth();
 
-$method = $_SERVER['REQUEST_METHOD'];
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
 
-if ($method === 'POST') {
+// --- ADD ---
+if ($action === 'add') {
     if (empty($_FILES['file'])) {
         http_response_code(400);
         echo json_encode(['error' => 'Aucun fichier fourni']);
@@ -23,12 +24,13 @@ if ($method === 'POST') {
     move_uploaded_file($file['tmp_name'], $dest);
 
     $tools = read_json(TOOLS_FILE);
+    $name = trim($_POST['name'] ?? '');
     $newTool = [
         'id' => bin2hex(random_bytes(16)),
-        'name' => $_POST['name'] ?: $file['name'],
+        'name' => $name !== '' ? $name : $file['name'],
         'description' => $_POST['description'] ?? '',
         'category' => $_POST['category'] ?? 'Utilitaires',
-        'version' => $_POST['version'] ?? '1.0',
+        'version' => $_POST['version'] ?? '',
         'buttonColor' => $_POST['buttonColor'] ?? '',
         'filename' => $uniqueName,
         'originalName' => $file['name'],
@@ -43,9 +45,9 @@ if ($method === 'POST') {
     exit;
 }
 
-if ($method === 'PUT') {
-    $id = $_GET['id'] ?? '';
-    $input = get_input();
+// --- EDIT ---
+if ($action === 'edit') {
+    $id = $_POST['id'] ?? '';
     $tools = read_json(TOOLS_FILE);
 
     $idx = null;
@@ -61,7 +63,7 @@ if ($method === 'PUT') {
 
     $allowed = ['name', 'description', 'category', 'version', 'buttonColor'];
     foreach ($allowed as $key) {
-        if (isset($input[$key])) $tools[$idx][$key] = $input[$key];
+        if (isset($_POST[$key])) $tools[$idx][$key] = $_POST[$key];
     }
 
     write_json(TOOLS_FILE, $tools);
@@ -70,8 +72,9 @@ if ($method === 'PUT') {
     exit;
 }
 
-if ($method === 'DELETE') {
-    $id = $_GET['id'] ?? '';
+// --- DELETE ---
+if ($action === 'delete') {
+    $id = $_POST['id'] ?? '';
     $tools = read_json(TOOLS_FILE);
 
     $idx = null;
@@ -96,5 +99,5 @@ if ($method === 'DELETE') {
     exit;
 }
 
-http_response_code(405);
-echo json_encode(['error' => 'Méthode non supportée']);
+http_response_code(400);
+echo json_encode(['error' => 'Action manquante (add, edit, delete)']);

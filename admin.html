@@ -49,7 +49,7 @@
         </a>
         <a href="#" onclick="showSection('add', this); return false;" id="nav-add">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-          Ajouter
+          Ajouter un outil
         </a>
         <a href="#" onclick="showSection('logs', this); return false;" id="nav-logs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
@@ -60,7 +60,10 @@
       <div class="admin-content">
         <!-- TOOLS SECTION -->
         <section id="section-tools">
-          <h2>Outils disponibles</h2>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+            <h2 style="margin-bottom:0">Outils disponibles</h2>
+            <button class="btn-primary" style="width:auto;padding:8px 20px" onclick="showSection('add', document.getElementById('nav-add'))">+ Ajouter un outil</button>
+          </div>
           <div class="data-table-wrapper" id="tools-table-wrapper"></div>
         </section>
 
@@ -75,11 +78,11 @@
               <input type="file" id="file-input" hidden>
             </div>
             <div class="form-group">
-              <label for="tool-name">Nom de l'outil</label>
-              <input type="text" id="tool-name" placeholder="Ex: TeamViewer" required>
+              <label for="tool-name">Nom de l'outil <small style="color:var(--text-secondary);font-weight:400">(facultatif — utilise le nom du fichier si vide)</small></label>
+              <input type="text" id="tool-name" placeholder="Ex: TeamViewer">
             </div>
             <div class="form-group">
-              <label for="tool-desc">Description</label>
+              <label for="tool-desc">Description <small style="color:var(--text-secondary);font-weight:400">(facultatif)</small></label>
               <textarea id="tool-desc" placeholder="Brève description de l'outil..."></textarea>
             </div>
             <div class="form-group">
@@ -92,11 +95,11 @@
               </select>
             </div>
             <div class="form-group">
-              <label for="tool-version">Version</label>
-              <input type="text" id="tool-version" placeholder="1.0" value="1.0">
+              <label for="tool-version">Version <small style="color:var(--text-secondary);font-weight:400">(facultatif)</small></label>
+              <input type="text" id="tool-version" placeholder="Ex: 1.0">
             </div>
             <div class="form-group">
-              <label>Couleur du bouton Télécharger (optionnel)</label>
+              <label>Couleur du bouton Télécharger <small style="color:var(--text-secondary);font-weight:400">(facultatif)</small></label>
               <div class="color-row">
                 <input type="color" id="tool-color" value="#1038e0">
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -114,7 +117,7 @@
           <div class="log-filters">
             <div class="search-box" style="flex:1;min-width:200px">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" placeholder="Filtrer les journaux..." id="log-filter" oninput="loadLogs()">
+              <input type="text" placeholder="Filtrer par action, détail ou IP..." id="log-filter" oninput="loadLogs()">
             </div>
           </div>
           <div class="data-table-wrapper" id="logs-table-wrapper"></div>
@@ -132,7 +135,7 @@
         <input type="hidden" id="edit-id">
         <div class="form-group">
           <label>Nom</label>
-          <input type="text" id="edit-name" required>
+          <input type="text" id="edit-name">
         </div>
         <div class="form-group">
           <label>Description</label>
@@ -211,7 +214,8 @@ function checkAuth() {
         document.getElementById('admin-app').hidden = false;
         loadAdminTools();
       }
-    });
+    })
+    .catch(function() {});
 }
 
 document.getElementById('login-form').addEventListener('submit', function(e) {
@@ -235,6 +239,9 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
       errEl.textContent = 'Identifiants incorrects';
       errEl.hidden = false;
     }
+  }).catch(function() {
+    errEl.textContent = 'Erreur de connexion au serveur';
+    errEl.hidden = false;
   });
 });
 
@@ -267,22 +274,29 @@ function loadAdminTools() {
       var wrapper = document.getElementById('tools-table-wrapper');
 
       if (tools.length === 0) {
-        wrapper.innerHTML = '<div class="empty-state"><h3>Aucun outil</h3><p>Ajoutez votre premier outil via l\'onglet "Ajouter".</p></div>';
+        wrapper.innerHTML = '<div class="empty-state">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:64px;height:64px;margin-bottom:1rem;opacity:0.4"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>' +
+          '<h3>Aucun outil</h3>' +
+          '<p>Cliquez sur "Ajouter un outil" pour commencer.</p></div>';
         return;
       }
 
       var rows = tools.map(function(t, idx) {
+        var descShort = (t.description || '').substring(0, 50);
+        if ((t.description || '').length > 50) descShort += '...';
         return '<tr>' +
-          '<td><strong>' + esc(t.name) + '</strong><br><small style="color:var(--text-secondary)">' + esc(t.description).substring(0, 60) + '</small></td>' +
+          '<td><strong>' + esc(t.name) + '</strong>' +
+            (descShort ? '<br><small style="color:var(--text-secondary)">' + esc(descShort) + '</small>' : '') +
+          '</td>' +
           '<td><span class="tool-badge">' + esc(t.category) + '</span></td>' +
-          '<td>' + esc(t.version) + '</td>' +
+          '<td>' + (t.version ? esc(t.version) : '—') + '</td>' +
           '<td>' + formatSize(t.size) + '</td>' +
-          '<td>' + (t.buttonColor ? '<span class="color-preview" style="background:' + t.buttonColor + '"></span> ' + t.buttonColor : '<span style="color:var(--text-secondary)">Défaut</span>') + '</td>' +
+          '<td>' + (t.buttonColor ? '<span class="color-preview" style="background:' + t.buttonColor + '"></span> ' + t.buttonColor : 'Défaut') + '</td>' +
           '<td><div class="action-btns">' +
             '<button class="action-btn" onclick="openEditModal(' + idx + ')" title="Modifier">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
             '</button>' +
-            '<button class="action-btn delete" onclick="deleteTool(\'' + t.id + '\', \'' + esc(t.name).replace(/'/g, "\\'") + '\')" title="Supprimer">' +
+            '<button class="action-btn delete" onclick="deleteTool(\'' + t.id + '\', ' + idx + ')" title="Supprimer">' +
               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>' +
             '</button>' +
           '</div></td>' +
@@ -292,12 +306,22 @@ function loadAdminTools() {
       wrapper.innerHTML = '<table class="data-table"><thead><tr>' +
         '<th>Nom</th><th>Catégorie</th><th>Version</th><th>Taille</th><th>Couleur</th><th>Actions</th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table>';
+    })
+    .catch(function() {
+      document.getElementById('tools-table-wrapper').innerHTML =
+        '<div class="empty-state"><h3>Erreur de chargement</h3><p>Impossible de récupérer la liste des outils.</p></div>';
     });
 }
 
-function deleteTool(id, name) {
-  if (!confirm('Supprimer l\'outil "' + name + '" ? Cette action est irréversible.')) return;
-  fetch('api/admin-tools.php?id=' + id, { method: 'DELETE' })
+function deleteTool(id, idx) {
+  var name = cachedTools[idx] ? cachedTools[idx].name : 'cet outil';
+  if (!confirm('Supprimer "' + name + '" ? Cette action est irréversible.')) return;
+
+  var fd = new FormData();
+  fd.append('action', 'delete');
+  fd.append('id', id);
+
+  fetch('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
       if (r.ok) { toast('Outil supprimé', 'success'); loadAdminTools(); }
       else toast('Erreur lors de la suppression', 'error');
@@ -307,11 +331,12 @@ function deleteTool(id, name) {
 // --- Edit Modal ---
 function openEditModal(idx) {
   var tool = cachedTools[idx];
+  if (!tool) return;
   document.getElementById('edit-id').value = tool.id;
-  document.getElementById('edit-name').value = tool.name;
-  document.getElementById('edit-desc').value = tool.description;
-  document.getElementById('edit-cat').value = tool.category;
-  document.getElementById('edit-version').value = tool.version;
+  document.getElementById('edit-name').value = tool.name || '';
+  document.getElementById('edit-desc').value = tool.description || '';
+  document.getElementById('edit-cat').value = tool.category || 'Utilitaires';
+  document.getElementById('edit-version').value = tool.version || '';
   document.getElementById('edit-color-enabled').checked = !!tool.buttonColor;
   document.getElementById('edit-color').value = tool.buttonColor || '#1038e0';
   document.getElementById('edit-modal').hidden = false;
@@ -323,27 +348,30 @@ function closeEditModal() {
 
 document.getElementById('edit-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  var id = document.getElementById('edit-id').value;
   var colorEnabled = document.getElementById('edit-color-enabled').checked;
-  fetch('api/admin-tools.php?id=' + id, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: document.getElementById('edit-name').value,
-      description: document.getElementById('edit-desc').value,
-      category: document.getElementById('edit-cat').value,
-      version: document.getElementById('edit-version').value,
-      buttonColor: colorEnabled ? document.getElementById('edit-color').value : ''
+
+  var fd = new FormData();
+  fd.append('action', 'edit');
+  fd.append('id', document.getElementById('edit-id').value);
+  fd.append('name', document.getElementById('edit-name').value);
+  fd.append('description', document.getElementById('edit-desc').value);
+  fd.append('category', document.getElementById('edit-cat').value);
+  fd.append('version', document.getElementById('edit-version').value);
+  fd.append('buttonColor', colorEnabled ? document.getElementById('edit-color').value : '');
+
+  fetch('api/admin-tools.php', { method: 'POST', body: fd })
+    .then(function(r) {
+      if (r.ok) {
+        closeEditModal();
+        toast('Outil modifié', 'success');
+        loadAdminTools();
+      } else {
+        toast('Erreur lors de la modification', 'error');
+      }
     })
-  }).then(function(r) {
-    if (r.ok) {
-      closeEditModal();
-      toast('Outil modifié', 'success');
-      loadAdminTools();
-    } else {
-      toast('Erreur lors de la modification', 'error');
-    }
-  });
+    .catch(function() {
+      toast('Erreur de connexion au serveur', 'error');
+    });
 });
 
 // --- Upload ---
@@ -379,6 +407,7 @@ document.getElementById('add-form').addEventListener('submit', function(e) {
 
   var colorEnabled = document.getElementById('tool-color-enabled').checked;
   var fd = new FormData();
+  fd.append('action', 'add');
   fd.append('file', fileInput.files[0]);
   fd.append('name', document.getElementById('tool-name').value);
   fd.append('description', document.getElementById('tool-desc').value);
@@ -394,8 +423,13 @@ document.getElementById('add-form').addEventListener('submit', function(e) {
         document.getElementById('file-name').textContent = '';
         showSection('tools', document.getElementById('nav-tools'));
       } else {
-        toast('Erreur lors de l\'ajout', 'error');
+        r.json().then(function(d) {
+          toast(d.error || 'Erreur lors de l\'ajout', 'error');
+        }).catch(function() { toast('Erreur lors de l\'ajout', 'error'); });
       }
+    })
+    .catch(function() {
+      toast('Erreur de connexion au serveur', 'error');
     });
 });
 
@@ -433,6 +467,10 @@ function loadLogs(page) {
         '<button onclick="loadLogs(' + (logsPage - 1) + ')" ' + (logsPage <= 1 ? 'disabled' : '') + '>Précédent</button>' +
         '<span>Page ' + data.page + ' / ' + data.totalPages + '</span>' +
         '<button onclick="loadLogs(' + (logsPage + 1) + ')" ' + (logsPage >= data.totalPages ? 'disabled' : '') + '>Suivant</button>';
+    })
+    .catch(function() {
+      document.getElementById('logs-table-wrapper').innerHTML =
+        '<div class="empty-state"><h3>Erreur</h3><p>Impossible de charger les journaux.</p></div>';
     });
 }
 
