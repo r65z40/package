@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Administration - Cedelia Tools Portal</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="img/logo-header.svg" type="image/svg+xml">
 </head>
 <body>
 
@@ -32,26 +32,26 @@
   <!-- ADMIN -->
   <div id="admin-app" hidden>
     <header class="header">
-      <a href="/" class="header-brand">
-        <img src="/img/logo-header.svg" alt="Cedelia">
+      <a href="index.html" class="header-brand">
+        <img src="img/logo-header.svg" alt="Cedelia">
       </a>
       <nav class="header-nav">
-        <a href="/">Voir le portail</a>
+        <a href="index.html">Voir le portail</a>
         <button onclick="logout()">Déconnexion</button>
       </nav>
     </header>
 
     <div class="admin-layout">
       <nav class="admin-sidebar">
-        <a href="#" class="active" onclick="showSection('tools', this)" id="nav-tools">
+        <a href="#" class="active" onclick="showSection('tools', this); return false;" id="nav-tools">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Outils
         </a>
-        <a href="#" onclick="showSection('add', this)" id="nav-add">
+        <a href="#" onclick="showSection('add', this); return false;" id="nav-add">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
           Ajouter
         </a>
-        <a href="#" onclick="showSection('logs', this)" id="nav-logs">
+        <a href="#" onclick="showSection('logs', this); return false;" id="nav-logs">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
           Journaux
         </a>
@@ -61,7 +61,7 @@
         <!-- TOOLS SECTION -->
         <section id="section-tools">
           <h2>Outils disponibles</h2>
-          <div id="tools-table-wrapper"></div>
+          <div class="data-table-wrapper" id="tools-table-wrapper"></div>
         </section>
 
         <!-- ADD SECTION -->
@@ -117,7 +117,7 @@
               <input type="text" placeholder="Filtrer les journaux..." id="log-filter" oninput="loadLogs()">
             </div>
           </div>
-          <div id="logs-table-wrapper"></div>
+          <div class="data-table-wrapper" id="logs-table-wrapper"></div>
           <div class="pagination" id="logs-pagination"></div>
         </section>
       </div>
@@ -169,7 +169,7 @@
   </div>
 
 <script>
-const LABELS = {
+var LABELS = {
   download: 'Téléchargement',
   login: 'Connexion',
   login_failed: 'Échec connexion',
@@ -179,51 +179,77 @@ const LABELS = {
   tool_delete: 'Suppression'
 };
 
-// --- Auth ---
-async function checkAuth() {
-  const res = await fetch('/api/auth/check');
-  const data = await res.json();
-  if (data.authenticated) {
-    document.getElementById('login-screen').hidden = true;
-    document.getElementById('admin-app').hidden = false;
-    loadAdminTools();
-  }
+function esc(str) {
+  var d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
 }
 
-document.getElementById('login-form').addEventListener('submit', async (e) => {
+function formatSize(bytes) {
+  if (!bytes) return '—';
+  if (bytes < 1024) return bytes + ' o';
+  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Ko';
+  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' Mo';
+  return (bytes / 1073741824).toFixed(1) + ' Go';
+}
+
+function toast(msg, type) {
+  var t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function() { t.remove(); }, 3000);
+}
+
+// --- Auth ---
+function checkAuth() {
+  fetch('api/auth-check.php')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.authenticated) {
+        document.getElementById('login-screen').hidden = true;
+        document.getElementById('admin-app').hidden = false;
+        loadAdminTools();
+      }
+    });
+}
+
+document.getElementById('login-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  const errEl = document.getElementById('login-error');
+  var errEl = document.getElementById('login-error');
   errEl.hidden = true;
 
-  const res = await fetch('/api/login', {
+  fetch('api/login.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       username: document.getElementById('username').value,
       password: document.getElementById('password').value
     })
+  }).then(function(r) {
+    if (r.ok) {
+      document.getElementById('login-screen').hidden = true;
+      document.getElementById('admin-app').hidden = false;
+      loadAdminTools();
+    } else {
+      errEl.textContent = 'Identifiants incorrects';
+      errEl.hidden = false;
+    }
   });
-
-  if (res.ok) {
-    document.getElementById('login-screen').hidden = true;
-    document.getElementById('admin-app').hidden = false;
-    loadAdminTools();
-  } else {
-    errEl.textContent = 'Identifiants incorrects';
-    errEl.hidden = false;
-  }
 });
 
-async function logout() {
-  await fetch('/api/logout', { method: 'POST' });
-  location.reload();
+function logout() {
+  fetch('api/logout.php', { method: 'POST' }).then(function() { location.reload(); });
 }
 
 // --- Sections ---
 function showSection(name, link) {
-  document.querySelectorAll('.admin-content > section').forEach(s => s.hidden = true);
+  var sections = document.querySelectorAll('.admin-content > section');
+  for (var i = 0; i < sections.length; i++) sections[i].hidden = true;
   document.getElementById('section-' + name).hidden = false;
-  document.querySelectorAll('.admin-sidebar a').forEach(a => a.classList.remove('active'));
+
+  var links = document.querySelectorAll('.admin-sidebar a');
+  for (var i = 0; i < links.length; i++) links[i].classList.remove('active');
   if (link) link.classList.add('active');
 
   if (name === 'tools') loadAdminTools();
@@ -231,53 +257,56 @@ function showSection(name, link) {
 }
 
 // --- Tools management ---
-async function loadAdminTools() {
-  const res = await fetch('/api/tools');
-  const tools = await res.json();
-  const wrapper = document.getElementById('tools-table-wrapper');
+var cachedTools = [];
 
-  if (tools.length === 0) {
-    wrapper.innerHTML = '<div class="empty-state"><h3>Aucun outil</h3><p>Ajoutez votre premier outil via l\'onglet "Ajouter".</p></div>';
-    return;
-  }
+function loadAdminTools() {
+  fetch('api/tools.php')
+    .then(function(r) { return r.json(); })
+    .then(function(tools) {
+      cachedTools = tools;
+      var wrapper = document.getElementById('tools-table-wrapper');
 
-  wrapper.innerHTML = `
-    <table class="data-table">
-      <thead><tr>
-        <th>Nom</th><th>Catégorie</th><th>Version</th><th>Taille</th><th>Couleur</th><th>Actions</th>
-      </tr></thead>
-      <tbody>${tools.map(t => `
-        <tr>
-          <td><strong>${esc(t.name)}</strong><br><small style="color:var(--text-secondary)">${esc(t.description).substring(0, 60)}</small></td>
-          <td><span class="tool-badge">${esc(t.category)}</span></td>
-          <td>${esc(t.version)}</td>
-          <td>${formatSize(t.size)}</td>
-          <td>${t.buttonColor ? `<span class="color-preview" style="background:${t.buttonColor}"></span> ${t.buttonColor}` : '<span style="color:var(--text-secondary)">Défaut</span>'}</td>
-          <td><div class="action-btns">
-            <button class="action-btn" onclick='openEditModal(${JSON.stringify(t)})' title="Modifier">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            </button>
-            <button class="action-btn delete" onclick="deleteTool('${t.id}', '${esc(t.name)}')" title="Supprimer">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
-            </button>
-          </div></td>
-        </tr>`).join('')}</tbody>
-    </table>`;
+      if (tools.length === 0) {
+        wrapper.innerHTML = '<div class="empty-state"><h3>Aucun outil</h3><p>Ajoutez votre premier outil via l\'onglet "Ajouter".</p></div>';
+        return;
+      }
+
+      var rows = tools.map(function(t, idx) {
+        return '<tr>' +
+          '<td><strong>' + esc(t.name) + '</strong><br><small style="color:var(--text-secondary)">' + esc(t.description).substring(0, 60) + '</small></td>' +
+          '<td><span class="tool-badge">' + esc(t.category) + '</span></td>' +
+          '<td>' + esc(t.version) + '</td>' +
+          '<td>' + formatSize(t.size) + '</td>' +
+          '<td>' + (t.buttonColor ? '<span class="color-preview" style="background:' + t.buttonColor + '"></span> ' + t.buttonColor : '<span style="color:var(--text-secondary)">Défaut</span>') + '</td>' +
+          '<td><div class="action-btns">' +
+            '<button class="action-btn" onclick="openEditModal(' + idx + ')" title="Modifier">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+            '</button>' +
+            '<button class="action-btn delete" onclick="deleteTool(\'' + t.id + '\', \'' + esc(t.name).replace(/'/g, "\\'") + '\')" title="Supprimer">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>' +
+            '</button>' +
+          '</div></td>' +
+        '</tr>';
+      }).join('');
+
+      wrapper.innerHTML = '<table class="data-table"><thead><tr>' +
+        '<th>Nom</th><th>Catégorie</th><th>Version</th><th>Taille</th><th>Couleur</th><th>Actions</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
+    });
 }
 
-async function deleteTool(id, name) {
-  if (!confirm(`Supprimer l'outil "${name}" ? Cette action est irréversible.`)) return;
-  const res = await fetch('/api/admin/tools/' + id, { method: 'DELETE' });
-  if (res.ok) {
-    toast('Outil supprimé', 'success');
-    loadAdminTools();
-  } else {
-    toast('Erreur lors de la suppression', 'error');
-  }
+function deleteTool(id, name) {
+  if (!confirm('Supprimer l\'outil "' + name + '" ? Cette action est irréversible.')) return;
+  fetch('api/admin-tools.php?id=' + id, { method: 'DELETE' })
+    .then(function(r) {
+      if (r.ok) { toast('Outil supprimé', 'success'); loadAdminTools(); }
+      else toast('Erreur lors de la suppression', 'error');
+    });
 }
 
 // --- Edit Modal ---
-function openEditModal(tool) {
+function openEditModal(idx) {
+  var tool = cachedTools[idx];
   document.getElementById('edit-id').value = tool.id;
   document.getElementById('edit-name').value = tool.name;
   document.getElementById('edit-desc').value = tool.description;
@@ -292,11 +321,11 @@ function closeEditModal() {
   document.getElementById('edit-modal').hidden = true;
 }
 
-document.getElementById('edit-form').addEventListener('submit', async (e) => {
+document.getElementById('edit-form').addEventListener('submit', function(e) {
   e.preventDefault();
-  const id = document.getElementById('edit-id').value;
-  const colorEnabled = document.getElementById('edit-color-enabled').checked;
-  const res = await fetch('/api/admin/tools/' + id, {
+  var id = document.getElementById('edit-id').value;
+  var colorEnabled = document.getElementById('edit-color-enabled').checked;
+  fetch('api/admin-tools.php?id=' + id, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -306,24 +335,25 @@ document.getElementById('edit-form').addEventListener('submit', async (e) => {
       version: document.getElementById('edit-version').value,
       buttonColor: colorEnabled ? document.getElementById('edit-color').value : ''
     })
+  }).then(function(r) {
+    if (r.ok) {
+      closeEditModal();
+      toast('Outil modifié', 'success');
+      loadAdminTools();
+    } else {
+      toast('Erreur lors de la modification', 'error');
+    }
   });
-  if (res.ok) {
-    closeEditModal();
-    toast('Outil modifié', 'success');
-    loadAdminTools();
-  } else {
-    toast('Erreur lors de la modification', 'error');
-  }
 });
 
 // --- Upload ---
-const uploadZone = document.getElementById('upload-zone');
-const fileInput = document.getElementById('file-input');
+var uploadZone = document.getElementById('upload-zone');
+var fileInput = document.getElementById('file-input');
 
-uploadZone.addEventListener('click', () => fileInput.click());
-uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('dragover'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-uploadZone.addEventListener('drop', (e) => {
+uploadZone.addEventListener('click', function() { fileInput.click(); });
+uploadZone.addEventListener('dragover', function(e) { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', function() { uploadZone.classList.remove('dragover'); });
+uploadZone.addEventListener('drop', function(e) {
   e.preventDefault();
   uploadZone.classList.remove('dragover');
   if (e.dataTransfer.files.length) {
@@ -334,7 +364,7 @@ uploadZone.addEventListener('drop', (e) => {
     }
   }
 });
-fileInput.addEventListener('change', () => {
+fileInput.addEventListener('change', function() {
   if (fileInput.files.length) {
     document.getElementById('file-name').textContent = fileInput.files[0].name;
     if (!document.getElementById('tool-name').value) {
@@ -343,12 +373,12 @@ fileInput.addEventListener('change', () => {
   }
 });
 
-document.getElementById('add-form').addEventListener('submit', async (e) => {
+document.getElementById('add-form').addEventListener('submit', function(e) {
   e.preventDefault();
   if (!fileInput.files.length) { toast('Sélectionnez un fichier', 'error'); return; }
 
-  const colorEnabled = document.getElementById('tool-color-enabled').checked;
-  const fd = new FormData();
+  var colorEnabled = document.getElementById('tool-color-enabled').checked;
+  var fd = new FormData();
   fd.append('file', fileInput.files[0]);
   fd.append('name', document.getElementById('tool-name').value);
   fd.append('description', document.getElementById('tool-desc').value);
@@ -356,73 +386,54 @@ document.getElementById('add-form').addEventListener('submit', async (e) => {
   fd.append('version', document.getElementById('tool-version').value);
   fd.append('buttonColor', colorEnabled ? document.getElementById('tool-color').value : '');
 
-  const res = await fetch('/api/admin/tools', { method: 'POST', body: fd });
-  if (res.ok) {
-    toast('Outil ajouté avec succès', 'success');
-    document.getElementById('add-form').reset();
-    document.getElementById('file-name').textContent = '';
-    showSection('tools', document.getElementById('nav-tools'));
-  } else {
-    toast('Erreur lors de l\'ajout', 'error');
-  }
+  fetch('api/admin-tools.php', { method: 'POST', body: fd })
+    .then(function(r) {
+      if (r.ok) {
+        toast('Outil ajouté avec succès', 'success');
+        document.getElementById('add-form').reset();
+        document.getElementById('file-name').textContent = '';
+        showSection('tools', document.getElementById('nav-tools'));
+      } else {
+        toast('Erreur lors de l\'ajout', 'error');
+      }
+    });
 });
 
 // --- Logs ---
-let logsPage = 1;
+var logsPage = 1;
 
-async function loadLogs(page) {
+function loadLogs(page) {
   if (page) logsPage = page;
-  const filter = document.getElementById('log-filter')?.value || '';
-  const res = await fetch(`/api/admin/logs?page=${logsPage}&limit=30&filter=${encodeURIComponent(filter)}`);
-  const data = await res.json();
-  const wrapper = document.getElementById('logs-table-wrapper');
+  var filter = document.getElementById('log-filter') ? document.getElementById('log-filter').value : '';
+  fetch('api/admin-logs.php?page=' + logsPage + '&limit=30&filter=' + encodeURIComponent(filter))
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var wrapper = document.getElementById('logs-table-wrapper');
 
-  if (data.logs.length === 0) {
-    wrapper.innerHTML = '<div class="empty-state"><h3>Aucun journal</h3><p>Les activités apparaîtront ici.</p></div>';
-    document.getElementById('logs-pagination').innerHTML = '';
-    return;
-  }
+      if (data.logs.length === 0) {
+        wrapper.innerHTML = '<div class="empty-state"><h3>Aucun journal</h3><p>Les activités apparaîtront ici.</p></div>';
+        document.getElementById('logs-pagination').innerHTML = '';
+        return;
+      }
 
-  wrapper.innerHTML = `
-    <table class="data-table">
-      <thead><tr><th>Date</th><th>Action</th><th>Détails</th><th>IP</th></tr></thead>
-      <tbody>${data.logs.map(l => `
-        <tr>
-          <td style="white-space:nowrap">${new Date(l.timestamp).toLocaleString('fr-FR')}</td>
-          <td><span class="log-badge ${l.action}">${LABELS[l.action] || l.action}</span></td>
-          <td>${esc(l.details)}</td>
-          <td><code style="font-size:0.8rem">${esc(l.ip)}</code></td>
-        </tr>`).join('')}</tbody>
-    </table>`;
+      var rows = data.logs.map(function(l) {
+        return '<tr>' +
+          '<td style="white-space:nowrap">' + new Date(l.timestamp).toLocaleString('fr-FR') + '</td>' +
+          '<td><span class="log-badge ' + l.action + '">' + (LABELS[l.action] || l.action) + '</span></td>' +
+          '<td>' + esc(l.details) + '</td>' +
+          '<td><code style="font-size:0.8rem">' + esc(l.ip) + '</code></td>' +
+        '</tr>';
+      }).join('');
 
-  const pag = document.getElementById('logs-pagination');
-  pag.innerHTML = `
-    <button onclick="loadLogs(${logsPage - 1})" ${logsPage <= 1 ? 'disabled' : ''}>Précédent</button>
-    <span>Page ${data.page} / ${data.totalPages}</span>
-    <button onclick="loadLogs(${logsPage + 1})" ${logsPage >= data.totalPages ? 'disabled' : ''}>Suivant</button>`;
-}
+      wrapper.innerHTML = '<table class="data-table"><thead><tr>' +
+        '<th>Date</th><th>Action</th><th>Détails</th><th>IP</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>';
 
-// --- Helpers ---
-function formatSize(bytes) {
-  if (!bytes) return '—';
-  if (bytes < 1024) return bytes + ' o';
-  if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Ko';
-  if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + ' Mo';
-  return (bytes / 1073741824).toFixed(1) + ' Go';
-}
-
-function esc(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
-  return d.innerHTML;
-}
-
-function toast(msg, type) {
-  const t = document.createElement('div');
-  t.className = 'toast ' + type;
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
+      document.getElementById('logs-pagination').innerHTML =
+        '<button onclick="loadLogs(' + (logsPage - 1) + ')" ' + (logsPage <= 1 ? 'disabled' : '') + '>Précédent</button>' +
+        '<span>Page ' + data.page + ' / ' + data.totalPages + '</span>' +
+        '<button onclick="loadLogs(' + (logsPage + 1) + ')" ' + (logsPage >= data.totalPages ? 'disabled' : '') + '>Suivant</button>';
+    });
 }
 
 checkAuth();

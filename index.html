@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cedelia Informatique - Portail de téléchargement</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="icon" href="/img/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="img/logo-header.svg" type="image/svg+xml">
 </head>
 <body>
 
   <header class="header">
-    <a href="/" class="header-brand">
-      <img src="/img/logo-header.svg" alt="Cedelia Informatique">
+    <a href="index.html" class="header-brand">
+      <img src="img/logo-header.svg" alt="Cedelia Informatique">
     </a>
     <nav class="header-nav">
-      <a href="/admin.html" class="btn-admin">Administration</a>
+      <a href="admin.html" class="btn-admin">Administration</a>
     </nav>
   </header>
 
@@ -54,46 +54,60 @@ function formatSize(bytes) {
   return (bytes / 1073741824).toFixed(1) + ' Go';
 }
 
-let allTools = [];
-let activeCategory = '';
+function esc(str) {
+  var d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
 
-async function loadTools() {
-  const res = await fetch('/api/tools');
-  allTools = await res.json();
-  renderFilters();
-  renderTools();
+var allTools = [];
+var activeCategory = '';
+
+function loadTools() {
+  fetch('api/tools.php')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      allTools = data;
+      renderFilters();
+      renderTools();
+    });
 }
 
 function renderFilters() {
-  const categories = [...new Set(allTools.map(t => t.category))].sort();
-  const container = document.getElementById('filters');
+  var cats = [];
+  allTools.forEach(function(t) {
+    if (cats.indexOf(t.category) === -1) cats.push(t.category);
+  });
+  cats.sort();
 
-  let html = `<div class="search-box">${ICONS.search}<input type="text" placeholder="Rechercher un outil..." id="search-input" oninput="renderTools()"></div>`;
-  html += `<button class="filter-btn active" onclick="setCategory('', this)">Tous</button>`;
-  categories.forEach(cat => {
-    html += `<button class="filter-btn" onclick="setCategory('${cat}', this)">${cat}</button>`;
+  var container = document.getElementById('filters');
+  var html = '<div class="search-box">' + ICONS.search + '<input type="text" placeholder="Rechercher un outil..." id="search-input" oninput="renderTools()"></div>';
+  html += '<button class="filter-btn active" onclick="setCategory(\'\', this)">Tous</button>';
+  cats.forEach(function(cat) {
+    html += '<button class="filter-btn" onclick="setCategory(\'' + esc(cat) + '\', this)">' + esc(cat) + '</button>';
   });
   container.innerHTML = html;
 }
 
 function setCategory(cat, btn) {
   activeCategory = cat;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  var btns = document.querySelectorAll('.filter-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
   btn.classList.add('active');
   renderTools();
 }
 
 function renderTools() {
-  const search = (document.getElementById('search-input')?.value || '').toLowerCase();
-  let filtered = allTools;
+  var search = (document.getElementById('search-input') ? document.getElementById('search-input').value : '').toLowerCase();
+  var filtered = allTools;
 
-  if (activeCategory) filtered = filtered.filter(t => t.category === activeCategory);
-  if (search) filtered = filtered.filter(t =>
-    t.name.toLowerCase().includes(search) || t.description.toLowerCase().includes(search)
-  );
+  if (activeCategory) filtered = filtered.filter(function(t) { return t.category === activeCategory; });
+  if (search) filtered = filtered.filter(function(t) {
+    return t.name.toLowerCase().indexOf(search) !== -1 || t.description.toLowerCase().indexOf(search) !== -1;
+  });
 
-  const grid = document.getElementById('tools-grid');
-  const empty = document.getElementById('empty-state');
+  var grid = document.getElementById('tools-grid');
+  var empty = document.getElementById('empty-state');
 
   if (filtered.length === 0) {
     grid.innerHTML = '';
@@ -102,30 +116,23 @@ function renderTools() {
   }
 
   empty.hidden = true;
-  grid.innerHTML = filtered.map(tool => {
-    const btnStyle = tool.buttonColor ? `background:${tool.buttonColor}` : '';
-    return `
-      <div class="tool-card">
-        <div class="tool-card-header">
-          <h3>${esc(tool.name)}</h3>
-          <span class="tool-badge">${esc(tool.category)}</span>
-        </div>
-        <p>${esc(tool.description)}</p>
-        <div class="tool-meta">
-          <span>${ICONS.version} v${esc(tool.version)}</span>
-          <span>${ICONS.size} ${formatSize(tool.size)}</span>
-        </div>
-        <a href="/api/download/${tool.id}" class="btn-download" style="${btnStyle}">
-          ${ICONS.download} Télécharger
-        </a>
-      </div>`;
+  grid.innerHTML = filtered.map(function(tool) {
+    var btnStyle = tool.buttonColor ? 'background:' + tool.buttonColor : '';
+    return '<div class="tool-card">' +
+      '<div class="tool-card-header">' +
+        '<h3>' + esc(tool.name) + '</h3>' +
+        '<span class="tool-badge">' + esc(tool.category) + '</span>' +
+      '</div>' +
+      '<p>' + esc(tool.description) + '</p>' +
+      '<div class="tool-meta">' +
+        '<span>' + ICONS.version + ' v' + esc(tool.version) + '</span>' +
+        '<span>' + ICONS.size + ' ' + formatSize(tool.size) + '</span>' +
+      '</div>' +
+      '<a href="api/download.php?id=' + tool.id + '" class="btn-download" style="' + btnStyle + '">' +
+        ICONS.download + ' Télécharger' +
+      '</a>' +
+    '</div>';
   }).join('');
-}
-
-function esc(str) {
-  const d = document.createElement('div');
-  d.textContent = str || '';
-  return d.innerHTML;
 }
 
 loadTools();
