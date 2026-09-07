@@ -215,7 +215,22 @@ function api(url, opts) {
       o.body.append('token', token);
     }
   }
-  return fetch(url, o);
+  return fetch(url, o).then(function(r) {
+    if (r.status === 413) {
+      return Promise.reject(new Error('Fichier trop volumineux pour le serveur. Essayez un fichier plus petit ou contactez votre hébergeur.'));
+    }
+    return r;
+  });
+}
+
+function safeJson(r) {
+  return r.text().then(function(text) {
+    try { return { ok: r.ok, data: JSON.parse(text) }; }
+    catch(e) {
+      console.log('Réponse serveur (non-JSON):', text.substring(0, 200));
+      return { ok: false, data: { error: 'Réponse invalide du serveur (code ' + r.status + ')' } };
+    }
+  });
 }
 
 function checkAuth() {
@@ -245,7 +260,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
       password: document.getElementById('password').value
     })
   }).then(function(r) {
-    return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+    return safeJson(r);
   }).then(function(result) {
     if (result.ok && result.data.token) {
       localStorage.setItem('cedelia_token', result.data.token);
@@ -343,7 +358,7 @@ function deleteTool(id, idx) {
 
   api('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
-      return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+      return safeJson(r);
     })
     .then(function(result) {
       if (result.ok) { toast('Outil supprimé', 'success'); loadAdminTools(); }
@@ -388,7 +403,7 @@ document.getElementById('edit-form').addEventListener('submit', function(e) {
 
   api('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
-      return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+      return safeJson(r);
     })
     .then(function(result) {
       if (result.ok) {
@@ -448,7 +463,7 @@ document.getElementById('add-form').addEventListener('submit', function(e) {
 
   api('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
-      return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+      return safeJson(r);
     })
     .then(function(result) {
       if (result.ok) {
