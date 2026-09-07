@@ -10,9 +10,9 @@ $filter = $_GET['filter'] ?? '';
 if ($filter) {
     $f = mb_strtolower($filter);
     $logs = array_values(array_filter($logs, function($l) use ($f) {
-        return str_contains(mb_strtolower($l['action']), $f)
-            || str_contains(mb_strtolower($l['details']), $f)
-            || str_contains($l['ip'], $f);
+        return strpos(mb_strtolower($l['action']), $f) !== false
+            || strpos(mb_strtolower($l['details']), $f) !== false
+            || strpos($l['ip'], $f) !== false;
     }));
 }
 

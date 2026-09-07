@@ -323,9 +323,13 @@ function deleteTool(id, idx) {
 
   fetch('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
-      if (r.ok) { toast('Outil supprimé', 'success'); loadAdminTools(); }
-      else toast('Erreur lors de la suppression', 'error');
-    });
+      return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (result.ok) { toast('Outil supprimé', 'success'); loadAdminTools(); }
+      else toast(result.data.error || 'Erreur lors de la suppression', 'error');
+    })
+    .catch(function(err) { toast('Erreur: ' + err.message, 'error'); });
 }
 
 // --- Edit Modal ---
@@ -361,16 +365,19 @@ document.getElementById('edit-form').addEventListener('submit', function(e) {
 
   fetch('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
-      if (r.ok) {
+      return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (result.ok) {
         closeEditModal();
         toast('Outil modifié', 'success');
         loadAdminTools();
       } else {
-        toast('Erreur lors de la modification', 'error');
+        toast(result.data.error || 'Erreur lors de la modification', 'error');
       }
     })
-    .catch(function() {
-      toast('Erreur de connexion au serveur', 'error');
+    .catch(function(err) {
+      toast('Erreur: ' + err.message, 'error');
     });
 });
 
@@ -417,19 +424,20 @@ document.getElementById('add-form').addEventListener('submit', function(e) {
 
   fetch('api/admin-tools.php', { method: 'POST', body: fd })
     .then(function(r) {
-      if (r.ok) {
+      return r.json().then(function(data) { return { ok: r.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (result.ok) {
         toast('Outil ajouté avec succès', 'success');
         document.getElementById('add-form').reset();
         document.getElementById('file-name').textContent = '';
         showSection('tools', document.getElementById('nav-tools'));
       } else {
-        r.json().then(function(d) {
-          toast(d.error || 'Erreur lors de l\'ajout', 'error');
-        }).catch(function() { toast('Erreur lors de l\'ajout', 'error'); });
+        toast(result.data.error || 'Erreur lors de l\'ajout', 'error');
       }
     })
-    .catch(function() {
-      toast('Erreur de connexion au serveur', 'error');
+    .catch(function(err) {
+      toast('Erreur: ' + err.message, 'error');
     });
 });
 
